@@ -7,7 +7,7 @@ from utils.validator import validate
 
 st.set_page_config(layout="wide")
 
-st.title("Site Imprest automation")
+st.title("Site Imprest ")
 
 uploaded_pdf = st.file_uploader(
     "Upload Site Imprest PDF",
