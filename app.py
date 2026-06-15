@@ -21,9 +21,12 @@ if uploaded_pdf:
         tmp.write(uploaded_pdf.read())
         pdf_path = tmp.name
 
-    data = extract_pdf_data(pdf_path)
+data = extract_pdf_data(pdf_path)
 
-    st.header("Project Details")
+st.header("Raw Extracted Data")
+st.write(data)
+
+st.header("Project Details")
 
     details_df = pd.DataFrame(
         data["project_details"].items(),
