@@ -1,24 +1,26 @@
-def validate(main_categories, bill_totals):
+def validate(main_categories, subsheet_categories):
 
-    output = []
+    results = []
 
-    for category in main_categories:
+    all_categories = set(main_categories.keys())
 
-        main_amt = main_categories[category]
+    for category in all_categories:
 
-        bill_amt = bill_totals.get(category, 0)
+        main_amt = main_categories.get(category, 0)
+
+        sub_amt = subsheet_categories.get(category, 0)
 
         status = "PASS"
 
-        if abs(main_amt - bill_amt) > 1:
+        if abs(main_amt - sub_amt) > 1:
 
             status = "FAIL"
 
-        output.append({
+        results.append({
             "Category": category,
             "Main Sheet": main_amt,
-            "Bills Total": bill_amt,
+            "Sub Sheet": sub_amt,
             "Status": status
         })
 
-    return output
+    return results
