@@ -2,6 +2,13 @@ import pdfplumber
 import re
 
 
+def safe_search(pattern, text):
+    match = re.search(pattern, text, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
 def extract_pdf_data(pdf_path):
 
     data = {
@@ -18,17 +25,85 @@ def extract_pdf_data(pdf_path):
 
         main_text = pdf.pages[0].extract_text()
 
+        if not main_text:
+            return data
+
+        # Debug (remove later if needed)
+        print(main_text)
+
         data["project_details"] = {
-            "Project Name": re.search(r'Project Name:\s*(.*?)\s*Account number', main_text).group(1),
-            "Account Number": re.search(r'Account number\s*(\d+)', main_text).group(1),
-            "Name": re.search(r'NAME:\s*(.*?)\s*IFSC CODE', main_text).group(1),
-            "IFSC": re.search(r'IFSC CODE\s*([A-Z0-9]+)', main_text).group(1),
-            "Employee ID": re.search(r'Emp ID:\s*(\d+)', main_text).group(1),
-            "Email": re.search(r'Email\s*-\s*ID\s*(.*?)\s*Site Name', main_text).group(1),
-            "Site Name": re.search(r'Site Name:\s*(.*?)\s*Phone Number', main_text).group(1),
-            "Phone": re.search(r'Phone Number\s*(\d+)', main_text).group(1),
-            "Statement No": re.search(r'Statement No\.\s*(\d+)', main_text).group(1)
+            "Project Name": safe_search(
+                r'Project Name:\s*(.*?)\s*Account',
+                main_text
+            ),
+            "Account Number": safe_search(
+                r'Account\s*number\s*(\d+)',
+                main_text
+            ),
+            "Name": safe_search(
+                r'NAME:\s*(.*?)\s*IFSC',
+                main_text
+            ),
+            "IFSC": safe_search(
+                r'IFSC\s*CODE\s*([A-Z0-9]+)',
+                main_text
+            ),
+            "Employee ID": safe_search(
+                r'Emp\s*ID:\s*(\d+)',
+                main_text
+            ),
+            "Email": safe_search(
+                r'Email\s*-\s*ID\s*(.*?)\s*Site Name',
+                main_text
+            ),
+            "Site Name": safe_search(
+                r'Site Name:\s*(.*?)\s*Phone Number',
+                main_text
+            ),
+            "Phone": safe_search(
+                r'Phone Number\s*(\d+)',
+                main_text
+            ),
+            "Statement No": safe_search(
+                r'Statement No\.?\s*(\d+)',
+                main_text
+            )
         }
+
+        # Totals
+
+        adv = re.search(
+            r'Advance Total\s*([\d,]+\.\d+)',
+            main_text
+        )
+
+        exp = re.search(
+            r'Expenses total\s*([\d,]+\.\d+)',
+            main_text,
+            re.IGNORECASE
+        )
+
+        bal = re.search(
+            r'Balance on hand\s*(-?\d+)',
+            main_text,
+            re.IGNORECASE
+        )
+
+        data["project_details"]["Advance Total"] = (
+            adv.group(1) if adv else ""
+        )
+
+        data["project_details"]["Expenses Total"] = (
+            exp.group(1) if exp else ""
+        )
+
+        data["project_details"]["Balance On Hand"] = (
+            bal.group(1) if bal else ""
+        )
+
+        # ======================
+        # MAIN SHEET CATEGORIES
+        # ======================
 
         category_patterns = [
             "Food",
@@ -45,21 +120,18 @@ def extract_pdf_data(pdf_path):
 
             for category in category_patterns:
 
-                if category in line:
+                if category.lower() in line.lower():
 
-                    amounts = re.findall(r'(\d+\.\d+)', line)
+                    amounts = re.findall(
+                        r'(\d+\.\d+)',
+                        line
+                    )
 
                     if amounts:
 
-                        data["main_categories"][category] = float(amounts[-1])
-
-        adv = re.search(r'Advance Total\s*([\d,]+\.\d+)', main_text)
-        exp = re.search(r'Expenses total\s*([\d,]+\.\d+)', main_text)
-        bal = re.search(r'Balance on hand\s*(-?\d+)', main_text)
-
-        data["project_details"]["Advance Total"] = adv.group(1) if adv else ""
-        data["project_details"]["Expenses Total"] = exp.group(1) if exp else ""
-        data["project_details"]["Balance On Hand"] = bal.group(1) if bal else ""
+                        data["main_categories"][category] = float(
+                            amounts[-1]
+                        )
 
         # ======================
         # SUB SHEETS
@@ -72,12 +144,24 @@ def extract_pdf_data(pdf_path):
             if not page_text:
                 continue
 
-            if "Stationary" in page_text or "Stationery" in page_text:
+            print(f"\nPAGE {page_num+1}\n")
+            print(page_text)
 
-                amounts = re.findall(r'(\d+\.\d+)', page_text)
+            if (
+                "Stationary" in page_text
+                or
+                "Stationery" in page_text
+            ):
+
+                amounts = re.findall(
+                    r'(\d+\.\d+)',
+                    page_text
+                )
 
                 if amounts:
 
-                    data["subsheet_categories"]["Stationery Expenses"] = float(amounts[-1])
+                    data["subsheet_categories"][
+                        "Stationery Expenses"
+                    ] = float(amounts[-1])
 
-    return data
+        return data
