@@ -25,6 +25,14 @@ if uploaded_pdf:
 
     st.header("Raw Extracted Data")
     st.write(data)
+    st.header("Extracted Page 1 Text")
+
+    st.text(
+        data.get(
+            "debug_page1",
+            "No Text Found"
+        )
+    )
 
     st.header("Project Details")
 
