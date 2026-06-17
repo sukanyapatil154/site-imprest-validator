@@ -23,7 +23,11 @@ def extract_pdf_data(pdf_path):
         # PAGE 1 = MAIN SHEET
         # ======================
 
-        main_text = pdf.pages[0].extract_text()
+       main_text = pdf.pages[0].extract_text()
+
+        print("========== PAGE 1 ==========")
+        print(main_text)
+        print("============================")
 
         if not main_text:
             return data
