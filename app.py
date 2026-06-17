@@ -63,6 +63,11 @@ if uploaded_pdf:
     st.header("Validation Table")
 
     st.dataframe(validation_df, use_container_width=True)
+if validation_df.empty:
+
+    st.warning("No validation data found")
+
+else:
 
     passed = len(
         validation_df[
@@ -76,6 +81,21 @@ if uploaded_pdf:
         ]
     )
 
+    st.header("Final Summary")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Passed", passed)
+
+    with col2:
+        st.metric("Failed", failed)
+
+    if failed == 0:
+        st.success("All Sub Sheet Totals Match Main Sheet")
+    else:
+        st.error("Mismatch Found")
+        
     st.header("Final Summary")
 
     col1, col2 = st.columns(2)
