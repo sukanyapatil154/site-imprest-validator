@@ -167,5 +167,6 @@ def extract_pdf_data(pdf_path):
                     data["subsheet_categories"][
                         "Stationery Expenses"
                     ] = float(amounts[-1])
-
+        # DEBUG
+        data["debug_page1"] = main_text
         return data
