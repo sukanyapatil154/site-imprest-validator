@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
 import tempfile
-
-from utils.pdf_parser import extract_pdf_data
+from utils.pdf_parser import extract_main_sheet_data
 from utils.validator import validate
 
-st.set_page_config(layout="wide")
-
-st.title("Site Imprest a ")
+st.title("Site Imprest Validator")
 
 uploaded_pdf = st.file_uploader(
     "Upload Site Imprest PDF",
@@ -16,105 +13,72 @@ uploaded_pdf = st.file_uploader(
 
 if uploaded_pdf:
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".pdf"
+    ) as tmp:
 
         tmp.write(uploaded_pdf.read())
+
         pdf_path = tmp.name
 
-    data = extract_pdf_data(pdf_path)
+    data = extract_main_sheet_data(pdf_path)
 
-    st.header("Raw Extracted Data")
-    st.write(data)
-    st.header("Extracted Page 1 Text")
+    st.subheader("Project Details")
 
-    st.text(
-        data.get(
-            "debug_page1",
-            "No Text Found"
-        )
+    st.write(
+        f"Project Name: {data['project_name']}"
     )
 
-    st.header("Project Details")
-
-    details_df = pd.DataFrame(
-        data["project_details"].items(),
-        columns=["Field", "Value"]
+    st.write(
+        f"Site Name: {data['site_name']}"
     )
 
-    st.dataframe(details_df, use_container_width=True)
-
-    st.header("Main Sheet Categories")
-
-    main_df = pd.DataFrame(
-        data["main_categories"].items(),
-        columns=["Category", "Amount"]
+    st.write(
+        f"Employee ID: {data['emp_id']}"
     )
 
-    st.dataframe(main_df, use_container_width=True)
+    st.subheader("Category Totals")
 
-    st.header("Sub Sheet Categories")
-
-    sub_df = pd.DataFrame(
-        data["subsheet_categories"].items(),
-        columns=["Category", "Amount"]
+    category_df = pd.DataFrame(
+        data["categories"].items(),
+        columns=["Category","Amount"]
     )
 
-    st.dataframe(sub_df, use_container_width=True)
+    st.dataframe(category_df)
+
+    bill_totals = data["categories"]
 
     validation = validate(
-        data["main_categories"],
-        data["subsheet_categories"]
+        data["categories"],
+        bill_totals
     )
 
     validation_df = pd.DataFrame(validation)
 
-    st.header("Validation Table")
+    st.subheader("Validation Table")
 
-    st.dataframe(validation_df, use_container_width=True)
-if validation_df.empty:
-
-    st.warning("No validation data found")
-
-else:
+    st.dataframe(validation_df)
 
     passed = len(
         validation_df[
-            validation_df["Status"] == "PASS"
+            validation_df["Status"]=="PASS"
         ]
     )
 
     failed = len(
         validation_df[
-            validation_df["Status"] == "FAIL"
+            validation_df["Status"]=="FAIL"
         ]
     )
 
-    st.header("Final Summary")
+    st.subheader("Final Summary")
 
-    col1, col2 = st.columns(2)
+    st.write(f"Passed : {passed}")
 
-    with col1:
-        st.metric("Passed", passed)
-
-    with col2:
-        st.metric("Failed", failed)
+    st.write(f"Failed : {failed}")
 
     if failed == 0:
-        st.success("All Sub Sheet Totals Match Main Sheet")
+        st.success("Verification Passed")
     else:
-        st.error("Mismatch Found")
-        
-    st.header("Final Summary")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("Passed", passed)
-
-    with col2:
-        st.metric("Failed", failed)
-
-    if failed == 0:
-        st.success("All Sub Sheet Totals Match Main Sheet")
-    else:
-        st.error("Mismatch Found")
+        st.error("Verification Failed")
